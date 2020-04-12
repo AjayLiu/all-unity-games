@@ -1,0 +1,8 @@
+During Draw Phase:
+Use your mouse to draw a platform with the available ink (in one stroke). PS, try to make your shape well rounded!
+
+
+During Bounce Phase:
+Use left/right arrow keys or a/d to move your drawing, and keep the ball in the air
+
+pause - escape
