@@ -1,0 +1,6 @@
+During Draw Phase:
+Use your finger to draw a shape with the available ink in one stroke. PS, try to make your shape well rounded!
+
+
+During Bounce Phase:
+Use the left/right buttons to move your drawing and keep the ball in the air

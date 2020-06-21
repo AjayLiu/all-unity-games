@@ -43,7 +43,7 @@ namespace Platformer.Mechanics
         public Bounds Bounds => collider2d.bounds;
 
         void Awake()
-        {
+        {            
             health = GetComponent<Health>();
             audioSource = GetComponent<AudioSource>();
             collider2d = GetComponent<Collider2D>();
@@ -56,8 +56,9 @@ namespace Platformer.Mechanics
             if (controlEnabled)
             {
                 move.x = Input.GetAxis("Horizontal");
-                if (jumpState == JumpState.Grounded && Input.GetButtonDown("Jump"))
+                if ((jumpState == JumpState.Grounded || jumpState == JumpState.InFlight) && Input.GetButtonDown("Jump")) {
                     jumpState = JumpState.PrepareToJump;
+                }
                 else if (Input.GetButtonUp("Jump"))
                 {
                     stopJump = true;

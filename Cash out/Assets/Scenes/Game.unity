@@ -2715,6 +2715,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Input Selection Canvas
       objectReference: {fileID: 0}
+    - target: {fileID: 1607572975898824, guid: 5d856abf3d35e5c47b93048609a6f438, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 224362497824994466, guid: 5d856abf3d35e5c47b93048609a6f438,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -3433,17 +3437,17 @@ PrefabInstance:
     - target: {fileID: 3560188911840519284, guid: c725770e7f05c9449a5983219ad57119,
         type: 3}
       propertyPath: isKeyboard
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3560188911840519284, guid: c725770e7f05c9449a5983219ad57119,
         type: 3}
       propertyPath: isMobile
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3560188911840519284, guid: c725770e7f05c9449a5983219ad57119,
         type: 3}
       propertyPath: isLaneInput
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3560188911840519284, guid: c725770e7f05c9449a5983219ad57119,
         type: 3}

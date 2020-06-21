@@ -344,7 +344,7 @@ MonoBehaviour:
   flyHeight: 8
   distanceFromPlayer: 25
   snipeTraceSpeed: 3
-  snipeRounds: 2
+  snipeRounds: 1
   gatlingRounds: 5
 --- !u!65 &3909477844448430164
 BoxCollider:
