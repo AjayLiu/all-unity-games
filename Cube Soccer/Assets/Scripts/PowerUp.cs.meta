@@ -1,0 +1,35 @@
+fileFormatVersion: 2
+guid: fa5e41d2583ece34f8480890f60eb6a6
+timeCreated: 1471601155
+licenseType: Free
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - speed: {fileID: 21300000, guid: bf5a44f635894a9428ae21da47361a5b, type: 3}
+  - shrink: {fileID: 21300000, guid: 211b78c2f3a81484a98b3e8e469f04ee, type: 3}
+  - expand: {fileID: 21300000, guid: a2690869c8cc3ed43905a23ed98bbb61, type: 3}
+  - shield: {fileID: 21300000, guid: 72e37bb9bad09594b86cfe19fa642e56, type: 3}
+  - freeze: {fileID: 21300000, guid: 7e362ec9f47941848974816b47027fbb, type: 3}
+  - helpWall: {fileID: 21300000, guid: f0ac981bdbe0908429e6c8a3a43bc4a9, type: 3}
+  - slowness: {fileID: 21300000, guid: 465c2c84886fea24780f870a8cfce649, type: 3}
+  - redPowerUpImage: {instanceID: 0}
+  - bluePowerUpImage: {instanceID: 0}
+  - dingSound: {instanceID: 0}
+  - powerUpText: {instanceID: 0}
+  - redMoveScript: {instanceID: 0}
+  - blueMoveScript: {instanceID: 0}
+  - redTransform: {instanceID: 0}
+  - blueTransform: {instanceID: 0}
+  - redGoalShield: {instanceID: 0}
+  - blueGoalShield: {instanceID: 0}
+  - blueGoalAssistWall: {instanceID: 0}
+  - blueGoalAssistWall2: {instanceID: 0}
+  - redGoalAssistWall: {instanceID: 0}
+  - redGoalAssistWall2: {instanceID: 0}
+  - durationBar: {instanceID: 0}
+  - durationBarImage: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
