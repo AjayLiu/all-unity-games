@@ -83,9 +83,6 @@ public class MoveableScript : MonoBehaviour {
     [HideInInspector] public int moveCountAtSpawnTime = -2;
 
     public void Rewind(bool playerFell) {
-
-        print(moveHistory.Count);
-
         if(moveCountAtSpawnTime == PlayerScript.moveCount) {
             isFall = true;
             rbody.isKinematic = false;            
@@ -182,7 +179,7 @@ public class MoveableScript : MonoBehaviour {
     IEnumerator MoveToDirection(Direction dir, int height, bool isRewind) {
 
         if (isRewind)
-            yield return new WaitUntil(() => PlayerScript.allowRotate);
+            yield return new WaitUntil(() => PlayerScript.allowRotate); 
 
         stillMoving = true;
         Vector3 roundedPos = GameController.RoundedPos(transform.parent.position);
@@ -258,6 +255,7 @@ public class MoveableScript : MonoBehaviour {
 
         isGonnaFall = false;
         stillMoving = false;
+
     }
 
     int heightToFallTo;

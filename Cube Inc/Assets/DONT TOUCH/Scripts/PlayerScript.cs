@@ -86,7 +86,9 @@ public class PlayerScript : MonoBehaviour {
 
     #region input    
 
+
     void KeyboardControl(){
+
         //KEYBOARD
         if (Input.GetKeyDown(KeyCode.W)) {
             moveQueue.Add(new MoveQueueItem(Direction.Forward, Mathf.RoundToInt(playerBody.transform.position.y), false));
@@ -100,7 +102,6 @@ public class PlayerScript : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.D)) {
             moveQueue.Add(new MoveQueueItem(Direction.Right, Mathf.RoundToInt(playerBody.transform.position.y), false));
         }
-        
         
         
 
@@ -317,7 +318,16 @@ public class PlayerScript : MonoBehaviour {
 
     public int lowestBlockHeight = -30;
 
+    public static bool moveableInMotion = false;
+
     IEnumerator MoveInDirection(Direction direction, int height, bool isRewindMove){
+
+        for (int i = 0; i < game.moveables.Count; i++) {
+            if (game.moveables[i].stillMoving) {
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+
         SetPlayerColliderActive(true);
         justFell = false;
         currentlyRewinding = isRewindMove;
@@ -332,6 +342,7 @@ public class PlayerScript : MonoBehaviour {
 
         detectTeleports = !isRewindMove;
 
+        
         switch (direction) {
             case Direction.Forward:
                 if (allowForward || isRewindMove) {
@@ -367,8 +378,7 @@ public class PlayerScript : MonoBehaviour {
                 break;
         }
 
-
-
+       
         if (!movementBlocked || isRewindMove) {
             movePlayerToTargetPos = true;
 
@@ -392,6 +402,7 @@ public class PlayerScript : MonoBehaviour {
 
             }
 
+            
 
 
             yield return new WaitUntil(() => !movePlayerToTargetPos);
@@ -422,9 +433,13 @@ public class PlayerScript : MonoBehaviour {
             moveHistory.RemoveAt(0);
         }
 
-        currentlyRewinding = false;
+        
+
+        currentlyRewinding = false;        
 
         allowRotate = true;
+
+        
     }
 
     int heightToFallTo;
