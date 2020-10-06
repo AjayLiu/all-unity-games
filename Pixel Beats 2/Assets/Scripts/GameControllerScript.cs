@@ -8,7 +8,6 @@ public class GameControllerScript : MonoBehaviour
     public bool autoGenerateSequence = true;
     public Tilemap map;
     public string sequenceRaw;
-    public GameObject frame;
 
     Vector3Int[] sequence;
 
@@ -121,10 +120,34 @@ public class GameControllerScript : MonoBehaviour
 
     int seqIndex = 0;
     void NextNote() {
-        frame.transform.position = new Vector3(sequence[seqIndex].x + 0.5f, sequence[seqIndex].y + 0.5f, -1);
-        SetTileActive(sequence[seqIndex], true);
-        print(sequence[seqIndex]);
+        
+        StartCoroutine(AnimateNote(sequence[seqIndex]));
         seqIndex++;        
+    }
+
+    public int concurrentNotes = 3; //how many notes to show ahead of the current note
+    public float noteTurnSpeed, noteShrinkSpeed;
+    public GameObject framePrefab;
+    IEnumerator AnimateNote(Vector3Int location) {
+        Vector3 framePos = new Vector3(sequence[seqIndex].x + 0.5f, sequence[seqIndex].y + 0.5f, -1);
+        GameObject frame = Instantiate(framePrefab, framePos, Quaternion.identity);
+        Transform outerFrameTransform = frame.transform.GetChild(0);
+
+        Vector3 targetAngles = transform.eulerAngles + 180f * Vector3.forward;
+        SetTileActive(sequence[seqIndex], true);
+
+
+
+        //smoothly animate the outer ring to spin to targetAngles (full 180)
+        float timeElapsed = 0;
+        while(timeElapsed < beatDuration * concurrentNotes) {
+            outerFrameTransform.eulerAngles = Vector3.Lerp(outerFrameTransform.eulerAngles, targetAngles, noteTurnSpeed * Time.deltaTime);
+            outerFrameTransform.localScale = Vector3.Lerp(outerFrameTransform.localScale, new Vector3(0.2f, 0.2f, 1f), noteShrinkSpeed * Time.deltaTime);
+            timeElapsed += Time.deltaTime;
+            yield return new WaitForEndOfFrame();           
+        }
+        outerFrameTransform.eulerAngles = targetAngles;
+        frame.SetActive(false);
     }
 
 
