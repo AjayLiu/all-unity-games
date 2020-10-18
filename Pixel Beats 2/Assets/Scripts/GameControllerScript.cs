@@ -10,7 +10,7 @@ public class GameControllerScript : MonoBehaviour
     public Tilemap map;
     public string sequenceRaw;
 
-    Vector3Int[] sequence;
+    Vector2Int[] sequence;
 
     void Awake() {
         ProcessTilemap();
@@ -34,7 +34,7 @@ public class GameControllerScript : MonoBehaviour
 
     void DetectPlayerTaps() {
         if (Input.GetKeyDown(KeyCode.Mouse0)) {
-            Vector3Int pos = RoundDownVector3(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+            Vector2Int pos = Vector3To2Int(RoundDownVector3(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
             //see if the user clicked on a valid note that is currently listening for input
             foreach (Note n in clickableNotes) {
                 if(n.location == pos) {
@@ -106,13 +106,13 @@ public class GameControllerScript : MonoBehaviour
 
     List<KeyValuePair<TileBase, short>> bases = new List<KeyValuePair<TileBase, short>>();
     short[,] bitmap;
-    List<Vector3Int> tilePositions = new List<Vector3Int>();
+    List<Vector2Int> tilePositions = new List<Vector2Int>();
     void ProcessTilemap() {
         bitmap = new short[map.cellBounds.size.x, map.cellBounds.size.y];
         for(int i = map.cellBounds.x; i < map.cellBounds.xMax; i++) {
             for(int j = map.cellBounds.y; j < map.cellBounds.yMax; j++) {
-                Vector3Int pos = new Vector3Int(i, j, 0);
-                TileBase tile = map.GetTile(pos);
+                Vector2Int pos = new Vector2Int(i, j);
+                TileBase tile = map.GetTile(Vector2To3Int(pos));
                 if(tile!= null) {
                     tilePositions.Add(pos);
                     //translate tilebase to an id (0,1,2...) based on dictionary (bases)
@@ -143,14 +143,14 @@ public class GameControllerScript : MonoBehaviour
     void GenerateRandomSequence() {
         //randomize the location list
         for (int i = 0; i < tilePositions.Count; i++) {
-            Vector3Int temp = tilePositions[i];
+            Vector2Int temp = tilePositions[i];
             int randomIndex = Random.Range(i, tilePositions.Count);
             tilePositions[i] = tilePositions[randomIndex];
             tilePositions[randomIndex] = temp;
         }
 
         //copy tilePositions to sequence
-        sequence = new Vector3Int[tilePositions.Count];
+        sequence = new Vector2Int[tilePositions.Count];
         for (int i = 0; i < tilePositions.Count; i++) {
             sequence[i] = tilePositions[i];
         }
@@ -160,17 +160,17 @@ public class GameControllerScript : MonoBehaviour
     //convert string ex: 1,2;6,3;7,1 into coordinates (1,2), (6,3), (7,1)
     void ProcessSequence() {
         string[] pairTokens = sequenceRaw.Split(';');
-        sequence = new Vector3Int[pairTokens.Length];
+        sequence = new Vector2Int[pairTokens.Length];
         for(int i = 0; i < pairTokens.Length; i++) {
             string[] coordTokens = pairTokens[i].Split(',');
-            sequence[i] = new Vector3Int(int.Parse(coordTokens[0]), int.Parse(coordTokens[1]), 0);
+            sequence[i] = new Vector2Int(int.Parse(coordTokens[0]), int.Parse(coordTokens[1]));
         }
     }
     
     
 
 
-    void SetTileActive(Vector3Int pos, bool active) {
+    void SetTileActive(Vector2Int pos, bool active) {
         int tileSpaceX = pos.x - map.cellBounds.x, tileSpaceY = pos.y - map.cellBounds.y;
         
         if(tileSpaceX >= 0 && tileSpaceY >= 0 && pos.x < map.cellBounds.xMax && pos.y < map.cellBounds.yMax) {
@@ -191,11 +191,11 @@ public class GameControllerScript : MonoBehaviour
 
 
     struct Note {
-        public Vector3Int location;
+        public Vector2Int location;
         public float spawnTime;
         public GameObject frame;
 
-        public Note(Vector3Int v, float t, GameObject frame) {
+        public Note(Vector2Int v, float t, GameObject frame) {
             location = v;
             spawnTime = t;
             this.frame = frame;
@@ -212,7 +212,7 @@ public class GameControllerScript : MonoBehaviour
 
     Queue<GameObject> framesQueue = new Queue<GameObject>(); //for reuse instead of destroying
 
-    IEnumerator AnimateNote(Vector3Int location) {
+    IEnumerator AnimateNote(Vector2Int location) {
 
         GameObject frame;
         Vector3 framePos = new Vector3(sequence[seqIndex].x + 0.5f, sequence[seqIndex].y + 0.5f, -1);
@@ -303,11 +303,17 @@ public class GameControllerScript : MonoBehaviour
 
 
     const float roundThreshold = 0.2f;
-    Vector3Int RoundDownVector3(Vector3 v) {        
+
+    public static Vector3Int RoundDownVector3(Vector3 v) {        
         return new Vector3Int(Mathf.FloorToInt(v.x), Mathf.FloorToInt(v.y), 0);
     }
-    Vector3Int RoundClosestVector3(Vector3 v) {
+    public static Vector3Int RoundClosestVector3(Vector3 v) {
         return new Vector3Int(Mathf.RoundToInt(v.x), Mathf.RoundToInt(v.y), 0);
     }
-
+    public static Vector3Int Vector2To3Int(Vector2Int v) {
+        return new Vector3Int(v.x, v.y, 0);
+    }
+    public static Vector2Int Vector3To2Int(Vector3Int v) {
+        return new Vector2Int(v.x, v.y);
+    }
 }
