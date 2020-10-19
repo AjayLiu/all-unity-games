@@ -7,22 +7,24 @@ using UnityEngine.UI;
 public class GameControllerScript : MonoBehaviour
 {
     public bool autoGenerateSequence = true;
+
     public Tilemap map;
+    public GameObject gridParent;
+
     public string sequenceRaw;
 
     Vector2Int[] sequence;
 
-    void Awake() {
-        ProcessTilemap();
-        if (autoGenerateSequence)
-            GenerateRandomSequence();
-        else
-            ProcessSequence();        
-    }
+    
 
     // Start is called before the first frame update
     void Start()
     {
+        ProcessTilemap();
+        if (autoGenerateSequence)
+            GenerateRandomSequence();
+        else
+            ProcessSequence();
         StartCoroutine(Beats());
     }
 

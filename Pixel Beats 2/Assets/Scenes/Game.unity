@@ -299,7 +299,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &611344898
 Transform:
   m_ObjectHideFlags: 0
@@ -1377,6 +1377,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   autoGenerateSequence: 1
   map: {fileID: 611344900}
+  gridParent: {fileID: 1810510692}
   sequenceRaw: 0,0;1,0;2,0
   indicatorText: {fileID: 485190860}
   afterNoteThreshold: 0
