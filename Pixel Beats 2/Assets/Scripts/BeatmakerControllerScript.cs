@@ -1,16 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-
+using SFB;
+using System.Runtime.InteropServices;
 
 public class BeatmakerControllerScript : MonoBehaviour
 {
-    
-    public Tilemap map;
-
     int index = 1;
     List<SequenceElement> sequence = new List<SequenceElement>();
     public GameObject framePrefab;
@@ -207,13 +204,14 @@ public class BeatmakerControllerScript : MonoBehaviour
         GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
 
         //import preview information
-        game.map = Instantiate(map, game.gridParent.transform);
-        game.map.gameObject.SetActive(true);
+        game.pixelArtImage.texture = pixelArtImage.texture;
+        ((Texture2D)game.pixelArtImage.texture).Apply();
+
         game.sequenceRaw = SequenceToString();
         game.autoGenerateSequence = false;
 
-        //hide the map
-        map.gameObject.SetActive(false);
+        //hide this scene's pixelart
+        pixelArtImage.gameObject.SetActive(false);
 
         //enable ExitPreview button
         exitPreviewButton.SetActive(true);
@@ -223,9 +221,47 @@ public class BeatmakerControllerScript : MonoBehaviour
         SceneManager.LoadScene("Beatmap Maker");
         framesParent.SetActive(true);
         exitPreviewButton.SetActive(false);
-        map.gameObject.SetActive(true);
+        pixelArtImage.gameObject.SetActive(true);
         isPreviewing = false;
     }
+
+    public void ImportPixelArt() {
+        //file explorer thanks to https://github.com/gkngkc/UnityStandaloneFileBrowser/blob/5b9318f207569331587fa321de47497c8113040e/Assets/StandaloneFileBrowser/Sample/CanvasSampleOpenFileImage.cs
+#if UNITY_WEBGL && !UNITY_EDITOR
+        //
+        // WebGL
+        //
+        [DllImport("__Internal")]
+        private static extern void UploadFile(string gameObjectName, string methodName, string filter, bool multiple);
+
+        UploadFile(gameObject.name, "OnFileUpload", ".png, .jpg", false);
+
+        // Called from browser
+        public void OnFileUpload(string url) {
+            StartCoroutine(OutputRoutine(url));
+        }
+#else
+        //
+        // Standalone platforms & editor
+        //
+
+        var paths = StandaloneFileBrowser.OpenFilePanel("Title", "", "png", false);
+        if (paths.Length > 0) {
+            StartCoroutine(OutputRoutine(new System.Uri(paths[0]).AbsoluteUri));
+        }  
+#endif
+    }
+
+    public RawImage pixelArtImage;
+
+    private IEnumerator OutputRoutine(string url) {
+        var loader = new WWW(url);
+        yield return loader;
+        pixelArtImage.texture = loader.texture;
+        pixelArtImage.texture.filterMode = FilterMode.Point;
+        ((Texture2D)pixelArtImage.texture).Apply();
+    }
+
 }
 
 public class SequenceElement {

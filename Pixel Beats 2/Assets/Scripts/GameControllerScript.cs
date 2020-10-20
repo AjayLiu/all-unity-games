@@ -1,15 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 
 public class GameControllerScript : MonoBehaviour
 {
     public bool autoGenerateSequence = true;
 
-    public Tilemap map;
-    public GameObject gridParent;
+    public RawImage pixelArtImage;
 
     public string sequenceRaw;
 
@@ -20,7 +18,7 @@ public class GameControllerScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        ProcessTilemap();
+        ProcessTexture2D();
         if (autoGenerateSequence)
             GenerateRandomSequence();
         else
@@ -106,44 +104,43 @@ public class GameControllerScript : MonoBehaviour
     }
 
 
-    List<KeyValuePair<TileBase, short>> bases = new List<KeyValuePair<TileBase, short>>();
-    short[,] bitmap;
-    List<Vector2Int> tilePositions = new List<Vector2Int>();
-    void ProcessTilemap() {
-        bitmap = new short[map.cellBounds.size.x, map.cellBounds.size.y];
-        for(int i = map.cellBounds.x; i < map.cellBounds.xMax; i++) {
-            for(int j = map.cellBounds.y; j < map.cellBounds.yMax; j++) {
-                Vector2Int pos = new Vector2Int(i, j);
-                TileBase tile = map.GetTile(Vector2To3Int(pos));
-                if(tile!= null) {
-                    tilePositions.Add(pos);
-                    //translate tilebase to an id (0,1,2...) based on dictionary (bases)
-                    short id;
-                    
-                    KeyValuePair<TileBase, short> pair = GetPair(tile);
-                    
-                    //Add if doesn't exist
-                    if (pair.Key == null) {
-                        KeyValuePair<TileBase, short> newPair = new KeyValuePair<TileBase, short>(tile, (short)bases.Count);
-                        bases.Add(newPair);
-                        pair = newPair;
-                    }
+    void ProcessTexture2D() {
+        originalPixelArt = (Texture2D)pixelArtImage.texture;
+        originalPixelArt.filterMode = FilterMode.Point;
+        originalPixelArt.Apply();
+        ClearPixelArt();
+    }
 
-                    id = pair.Value;                   
+    Texture2D originalPixelArt;
 
-                    bitmap[i-map.cellBounds.x, j-map.cellBounds.y] = id;
+    void SetTileActive(Vector2Int pos, bool active) {
+        Texture2D newTex = (Texture2D)pixelArtImage.texture;
+        newTex.SetPixel(pos.x - 8, pos.y - 8, active ? originalPixelArt.GetPixel(pos.x + 8, pos.y + 8) : new Color(0, 0, 0, 0));
+        newTex.filterMode = FilterMode.Point;
+        newTex.Apply();
+    }
 
-                    //hide the tile
-                    SetTileActive(pos, false);
-                } else {
-                    bitmap[i-map.cellBounds.x, j-map.cellBounds.y] = -1;
-                }
-            }
+    void ClearPixelArt() {
+        Color[] transparentArr = new Color[256];
+        for (int i = 0; i < transparentArr.Length; i++) {
+            transparentArr[i] = new Color(0, 0, 0, 0);
         }
+        Texture2D tex = new Texture2D(16, 16);
+        tex.SetPixels(transparentArr);
+        tex.filterMode = 0;
+        tex.Apply();
+        pixelArtImage.texture = tex;
     }
 
     void GenerateRandomSequence() {
-        //randomize the location list
+        List<Vector2Int> tilePositions = new List<Vector2Int>(256);
+        for(int i = -8; i < 8; i++) {
+            for (int j = -8; j < 8; j++) {
+                tilePositions.Add(new Vector2Int(i, j));
+            }
+        }
+
+        //shuffle the location list
         for (int i = 0; i < tilePositions.Count; i++) {
             Vector2Int temp = tilePositions[i];
             int randomIndex = Random.Range(i, tilePositions.Count);
@@ -172,22 +169,7 @@ public class GameControllerScript : MonoBehaviour
     
 
 
-    void SetTileActive(Vector2Int pos, bool active) {
-        int tileSpaceX = pos.x - map.cellBounds.x, tileSpaceY = pos.y - map.cellBounds.y;
-        
-        if(tileSpaceX >= 0 && tileSpaceY >= 0 && pos.x < map.cellBounds.xMax && pos.y < map.cellBounds.yMax) {
-            short id = bitmap[tileSpaceX, tileSpaceY];
-            TileBase tileToReveal = GetPair(id).Key;
-
-            if (active) {
-                if (tileToReveal != null && bitmap != null) {
-                    map.SetTile(new Vector3Int(pos.x, pos.y, 0), tileToReveal);
-                }
-            } else {
-                map.SetTile(new Vector3Int(pos.x, pos.y, 0), null);
-            }
-        }    
-    }
+    
 
 
 
@@ -284,23 +266,6 @@ public class GameControllerScript : MonoBehaviour
 
         if (seqIndex < sequence.Length)
             StartCoroutine(Beats());
-    }
-
-
-
-    KeyValuePair<TileBase, short> GetPair(short id) {
-        for (int i = 0; i < bases.Count; i++) {
-            if (bases[i].Value == id)
-                return bases[i];
-        }
-        return new KeyValuePair<TileBase, short>(null, -2);
-    }
-    KeyValuePair<TileBase, short> GetPair(TileBase t) {
-        for (int i = 0; i < bases.Count; i++) {
-            if (bases[i].Key == t)
-                return bases[i];
-        }
-        return new KeyValuePair<TileBase, short>(null, -2);
     }
 
 
