@@ -112,6 +112,8 @@ public class BeatmakerControllerScript : MonoBehaviour
     }
 
 
+
+
     //results follow the format pos1.x,pos1.y;pos2.x,pos2.y;pos3.x,pos3.y   ...etc
     string SequenceToString() {
         string results = "";
@@ -201,14 +203,9 @@ public class BeatmakerControllerScript : MonoBehaviour
 
         //wait for scene to be loaded
         yield return SceneManager.LoadSceneAsync("Game");
-        GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
 
-        //import preview information
-        game.pixelArtImage.texture = pixelArtImage.texture;
-        ((Texture2D)game.pixelArtImage.texture).Apply();
-
-        game.sequenceRaw = SequenceToString();
-        game.autoGenerateSequence = false;
+        //transfer info to game scene
+        TransferToGameScene();
 
         //hide this scene's pixelart
         pixelArtImage.gameObject.SetActive(false);
@@ -225,36 +222,38 @@ public class BeatmakerControllerScript : MonoBehaviour
         isPreviewing = false;
     }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")]
+    private static extern void UploadFile(string gameObjectName, string methodName, string filter, bool multiple);
+
+
     public void ImportPixelArt() {
         //file explorer thanks to https://github.com/gkngkc/UnityStandaloneFileBrowser/blob/5b9318f207569331587fa321de47497c8113040e/Assets/StandaloneFileBrowser/Sample/CanvasSampleOpenFileImage.cs
-#if UNITY_WEBGL && !UNITY_EDITOR
         //
         // WebGL
         //
-        [DllImport("__Internal")]
-        private static extern void UploadFile(string gameObjectName, string methodName, string filter, bool multiple);
-
-        UploadFile(gameObject.name, "OnFileUpload", ".png, .jpg", false);
-
         // Called from browser
-        public void OnFileUpload(string url) {
-            StartCoroutine(OutputRoutine(url));
-        }
+        UploadFile(gameObject.name, "OnImageUpload", ".png", false);
+        
+    }
+    public void OnImageUpload(string url) {
+        StartCoroutine(PixelArtRoutine(url));
+    }
 #else
+    public void ImportPixelArt() {
         //
         // Standalone platforms & editor
         //
-
         var paths = StandaloneFileBrowser.OpenFilePanel("Title", "", "png", false);
         if (paths.Length > 0) {
-            StartCoroutine(OutputRoutine(new System.Uri(paths[0]).AbsoluteUri));
-        }  
+            StartCoroutine(PixelArtRoutine(new System.Uri(paths[0]).AbsoluteUri));
+        }
+    }        
 #endif
-    }
 
     public RawImage pixelArtImage;
 
-    private IEnumerator OutputRoutine(string url) {
+    private IEnumerator PixelArtRoutine(string url) {
         var loader = new WWW(url);
         yield return loader;
         pixelArtImage.texture = loader.texture;
@@ -262,6 +261,97 @@ public class BeatmakerControllerScript : MonoBehaviour
         ((Texture2D)pixelArtImage.texture).Apply();
     }
 
+
+
+    void ClearSequence() {
+        for (int i = 0; i < sequence.Count; i++) {
+            Destroy(sequence[i].frame);
+        }
+        sequence.Clear();
+        history.Clear();
+        index = 1;
+        historyIndex = 0;
+    }
+
+    void ImportSequence(string s) {
+
+        ClearSequence();
+
+        //convert the string into coords
+        string[] pairTokens = s.Split(';');
+        Vector2Int[] coords = new Vector2Int[pairTokens.Length];
+        for (int i = 0; i < pairTokens.Length; i++) {
+            string[] coordTokens = pairTokens[i].Split(',');
+            coords[i] = new Vector2Int(int.Parse(coordTokens[0]), int.Parse(coordTokens[1]));
+        }
+
+        foreach (Vector2Int v in coords) {
+            SpawnFrame(v);
+        }
+    }
+
+    public InputField beatmapInput;
+    public void OnBeatmapTextFieldEndEdit() {        
+        if(beatmapInput.text != "") {
+            ImportSequence(beatmapInput.text);
+        }
+    }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    public void ImportMusic() {
+        //
+        // WebGL
+        //        
+        UploadFile(gameObject.name, "OnMusicUpload", ".ogg", false);
+    }
+    // Called from browser
+    public void OnMusicUpload(string url) {
+        StartCoroutine(MusicRoutine(url));
+    }
+#else
+
+    public void ImportMusic() {
+        //
+        // Standalone platforms & editor
+        //
+        var paths = StandaloneFileBrowser.OpenFilePanel("Title", "", "ogg", false);
+        if (paths.Length > 0) {
+            StartCoroutine(MusicRoutine(new System.Uri(paths[0]).AbsoluteUri));
+        }        
+    }
+#endif
+
+    AudioClip musicToPlay;
+
+    private IEnumerator MusicRoutine(string url) {
+        var loader = new WWW(url);
+        yield return loader;
+        //musicToPlay = loader.GetAudioClip(false);
+        AudioClip ac = loader.GetAudioClipCompressed(false, AudioType.AUDIOQUEUE) as AudioClip;
+        musicToPlay = ac;
+        musicToPlay.name = "music.ogg";
+    }
+
+    public InputField bpmInput;
+    int bpm;
+    public void BPMInput() {
+        bpm = int.Parse(bpmInput.text);
+    }
+
+    void TransferToGameScene() {
+        GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
+        game.pixelArtImage.texture = pixelArtImage.texture;
+        ((Texture2D)game.pixelArtImage.texture).Apply();
+
+        game.sequenceRaw = SequenceToString();
+        game.autoGenerateSequence = false;
+
+        game.audio = game.GetComponent<AudioSource>();
+        game.audio.clip = musicToPlay;
+        game.audio.Play();
+
+        game.UpdateBPM(bpm);
+    }
 }
 
 public class SequenceElement {

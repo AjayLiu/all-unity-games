@@ -13,11 +13,14 @@ public class GameControllerScript : MonoBehaviour
 
     Vector2Int[] sequence;
 
+    [HideInInspector]public AudioSource audio;
     
 
     // Start is called before the first frame update
     void Start()
     {
+        audio = GetComponent<AudioSource>();
+
         ProcessTexture2D();
         if (autoGenerateSequence)
             GenerateRandomSequence();
@@ -53,7 +56,7 @@ public class GameControllerScript : MonoBehaviour
     public Text indicatorText;
 
     void OnNoteClicked(Note note) {
-        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - beatDuration - 1);
+        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - (60f/bpm) - 1);
 
         if(timeDifference < 0.2f) {
             UpdateIndicatorAndStreak(NoteResult.Perfect);
@@ -228,7 +231,7 @@ public class GameControllerScript : MonoBehaviour
 
         //smoothly animate the outer ring to spin to targetAngles (full 180)
         float timeElapsed = 0;
-        while(timeElapsed < beatDuration * concurrentNotes) {
+        while(timeElapsed < (60f / bpm) * concurrentNotes) {
             // outerFrameTransform.eulerAngles = Vector3.Lerp(outerFrameTransform.eulerAngles, targetAngles, noteTurnSpeed * Time.deltaTime);
             // outerFrameTransform.localScale = Vector3.Lerp(outerFrameTransform.localScale, new Vector3(0.2f, 0.2f, 1f), noteShrinkSpeed * Time.deltaTime);
 
@@ -253,7 +256,7 @@ public class GameControllerScript : MonoBehaviour
     }
 
 
-    public float beatDuration = 0.8f;
+    public int bpm = 120;
     int seqIndex = 0;
 
     //Called recursively every beat
@@ -262,12 +265,17 @@ public class GameControllerScript : MonoBehaviour
         StartCoroutine(AnimateNote(sequence[seqIndex]));
         seqIndex++;
 
-        yield return new WaitForSeconds(beatDuration);
+        yield return new WaitForSeconds(60f / bpm);
 
         if (seqIndex < sequence.Length)
             StartCoroutine(Beats());
     }
 
+
+    public void UpdateBPM(int bpm) {
+        this.bpm = bpm;
+        noteShrinkSpeed = bpm / 300f;
+    }
 
     const float roundThreshold = 0.2f;
 
