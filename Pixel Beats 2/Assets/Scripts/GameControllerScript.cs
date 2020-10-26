@@ -169,13 +169,6 @@ public class GameControllerScript : MonoBehaviour
         }
     }
     
-    
-
-
-    
-
-
-
 
     struct Note {
         public Vector2Int location;
@@ -187,7 +180,11 @@ public class GameControllerScript : MonoBehaviour
             spawnTime = t;
             this.frame = frame;
         }
+
+        
     };
+
+   
 
     List<Note> clickableNotes = new List<Note>();
 
@@ -262,10 +259,16 @@ public class GameControllerScript : MonoBehaviour
     //Called recursively every beat
     IEnumerator Beats() {
 
-        StartCoroutine(AnimateNote(sequence[seqIndex]));
+        //skip if it is a silent beat
+        if (!NoteIsSilent(sequence[seqIndex])) {
+            StartCoroutine(AnimateNote(sequence[seqIndex]));
+        }
         seqIndex++;
 
+       
+
         yield return new WaitForSeconds(60f / bpm);
+
 
         if (seqIndex < sequence.Length)
             StartCoroutine(Beats());
@@ -277,8 +280,14 @@ public class GameControllerScript : MonoBehaviour
         noteShrinkSpeed = bpm / 300f;
     }
 
-    const float roundThreshold = 0.2f;
 
+
+
+    //if the note's location is out of bounds, it is a silent note
+    bool NoteIsSilent(Vector2Int v) {
+        return v.x > 7 || v.x < -8 || v.y > 7 || v.y < -8;
+    }
+    const float roundThreshold = 0.2f;
     public static Vector3Int RoundDownVector3(Vector3 v) {        
         return new Vector3Int(Mathf.FloorToInt(v.x), Mathf.FloorToInt(v.y), 0);
     }
