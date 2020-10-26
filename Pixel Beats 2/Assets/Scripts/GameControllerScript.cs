@@ -26,7 +26,8 @@ public class GameControllerScript : MonoBehaviour
             GenerateRandomSequence();
         else
             ProcessSequence();
-        StartCoroutine(Beats());
+
+        StartCoroutine(StartBeatmap());
     }
 
     // Update is called once per frame
@@ -56,8 +57,7 @@ public class GameControllerScript : MonoBehaviour
     public Text indicatorText;
 
     void OnNoteClicked(Note note) {
-        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - (60f/bpm) - 1);
-
+        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - 3*(1/(bpm / 60f)));
         if(timeDifference < 0.2f) {
             UpdateIndicatorAndStreak(NoteResult.Perfect);
         } else if(timeDifference < 0.4f){
@@ -255,6 +255,12 @@ public class GameControllerScript : MonoBehaviour
 
     public int bpm = 120;
     int seqIndex = 0;
+
+    public float waitBeginningTime = 0;
+    IEnumerator StartBeatmap() {
+        yield return new WaitForSeconds(waitBeginningTime);
+        StartCoroutine(Beats());
+    }
 
     //Called recursively every beat
     IEnumerator Beats() {

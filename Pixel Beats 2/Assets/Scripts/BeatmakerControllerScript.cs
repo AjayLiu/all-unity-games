@@ -126,9 +126,16 @@ public class BeatmakerControllerScript : MonoBehaviour
     }
 
     public void Export() {
+        //first is the sequence coordinates
         string results = SequenceToString();
+
+        //append metadata
+        //[0] = bpm
+        //[1] = beginning time
+        results += ";" + bpm.ToString() + ",";
+        results += waitBeginningTime.ToString();
+        
         print(results);
-        print("Total Notes: " + sequence.Count);
         //copy results to clipboard
         TextEditor te = new TextEditor();
         te.text = results;
@@ -280,7 +287,7 @@ public class BeatmakerControllerScript : MonoBehaviour
         //convert the string into coords
         string[] pairTokens = s.Split(';');
         Vector2Int[] coords = new Vector2Int[pairTokens.Length];
-        for (int i = 0; i < pairTokens.Length; i++) {
+        for (int i = 0; i < pairTokens.Length-1; i++) {
             string[] coordTokens = pairTokens[i].Split(',');
             coords[i] = new Vector2Int(int.Parse(coordTokens[0]), int.Parse(coordTokens[1]));
         }
@@ -288,6 +295,15 @@ public class BeatmakerControllerScript : MonoBehaviour
         foreach (Vector2Int v in coords) {
             SpawnFrame(v);
         }
+
+        //the final pair token contains other data like bpm and beginning time
+        //[0] = bpm
+        //[1] = beginning time
+        string[] metaTokens = pairTokens[pairTokens.Length - 1].Split(',');
+        bpm = int.Parse(metaTokens[0]);
+        waitBeginningTime = float.Parse(metaTokens[1]);
+        bpmInput.text = bpm.ToString();
+        waitInput.text = waitBeginningTime.ToString();
     }
 
     public InputField beatmapInput;
@@ -338,6 +354,12 @@ public class BeatmakerControllerScript : MonoBehaviour
         bpm = int.Parse(bpmInput.text);
     }
 
+    public InputField waitInput;
+    float waitBeginningTime = 0;
+    public void WaitSecondsInput() {
+        waitBeginningTime = float.Parse(waitInput.text);
+    }
+
     void TransferToGameScene() {
         GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
         game.pixelArtImage.texture = pixelArtImage.texture;
@@ -351,7 +373,11 @@ public class BeatmakerControllerScript : MonoBehaviour
         game.audio.Play();
 
         game.UpdateBPM(bpm);
+
+        game.waitBeginningTime = waitBeginningTime;
     }
+
+    
 }
 
 public class SequenceElement {
