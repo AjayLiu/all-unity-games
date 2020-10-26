@@ -119,6 +119,12 @@ public class BeatmakerControllerScript : MonoBehaviour
         string results = "";
         foreach (SequenceElement e in sequence) {
             results += e.pos.x + "," + e.pos.y;
+
+            //add a multiplier if it exists so it becomes ex: 3,4x1.2 (at position (3,4) with note length 1.2x)
+            if(e.multiplier != 1) {
+                results += "x" + e.multiplier.ToString();
+            }
+
             if (e != sequence[sequence.Count - 1])
                 results += ";";
         }
@@ -197,11 +203,33 @@ public class BeatmakerControllerScript : MonoBehaviour
         }
     }
 
+
+    public void OnMultiplierChange(int index, float newMult) {
+        foreach(SequenceElement s in sequence) {
+            if (s.index == index) {
+                s.multiplier = newMult;
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
     bool isPreviewing = false;
     public Text previewButtonText;
     public void Preview() {
         StartCoroutine(LoadInPreviewScene());
     }
+
+
+
+
 
     public GameObject exitPreviewButton;
     IEnumerator LoadInPreviewScene() {
@@ -286,14 +314,19 @@ public class BeatmakerControllerScript : MonoBehaviour
 
         //convert the string into coords
         string[] pairTokens = s.Split(';');
-        Vector2Int[] coords = new Vector2Int[pairTokens.Length];
         for (int i = 0; i < pairTokens.Length-1; i++) {
-            string[] coordTokens = pairTokens[i].Split(',');
-            coords[i] = new Vector2Int(int.Parse(coordTokens[0]), int.Parse(coordTokens[1]));
-        }
-
-        foreach (Vector2Int v in coords) {
+            char[] delimiters = { ',', 'x' };
+            string[] tokens = pairTokens[i].Split(delimiters);
+            Vector2Int v = new Vector2Int(int.Parse(tokens[0]), int.Parse(tokens[1]));
+            
             SpawnFrame(v);
+            
+            //there is a custom multipler ex: x1.5
+            if(tokens.Length > 2) {
+                sequence[i].multiplier = float.Parse(tokens[2]);
+                //change the placeholder 
+                sequence[i].multiplierText.transform.parent.GetComponentInChildren<Text>().text = sequence[i].multiplier.ToString();
+            }
         }
 
         //the final pair token contains other data like bpm and beginning time
@@ -330,7 +363,7 @@ public class BeatmakerControllerScript : MonoBehaviour
         //
         // Standalone platforms & editor
         //
-        var paths = StandaloneFileBrowser.OpenFilePanel("Title", "", "ogg", false);
+        var paths = StandaloneFileBrowser.OpenFilePanel("", "", "ogg", false);
         if (paths.Length > 0) {
             StartCoroutine(MusicRoutine(new System.Uri(paths[0]).AbsoluteUri));
         }        
@@ -342,10 +375,13 @@ public class BeatmakerControllerScript : MonoBehaviour
     private IEnumerator MusicRoutine(string url) {
         var loader = new WWW(url);
         yield return loader;
-        //musicToPlay = loader.GetAudioClip(false);
+#if UNITY_WEBGL && !UNITY_EDITOR
         AudioClip ac = loader.GetAudioClipCompressed(false, AudioType.AUDIOQUEUE) as AudioClip;
         musicToPlay = ac;
         musicToPlay.name = "music.ogg";
+#else
+        musicToPlay = loader.GetAudioClip(false);
+#endif
     }
 
     public InputField bpmInput;
@@ -385,11 +421,17 @@ public class SequenceElement {
     public GameObject frame;
     public int index;
     public Text frameText;
+    public float multiplier;
+    public Text multiplierText;
+
     public SequenceElement(Vector2Int p, GameObject f, int index) {
         pos = p;
         frame = f;
         this.index = index;
         frameText = f.GetComponentInChildren<Text>();
         frameText.text = index.ToString();
+
+        multiplierText = f.transform.GetChild(0).GetChild(1).GetChild(1).GetComponent<Text>();
+        multiplier = 1;
     }
 }

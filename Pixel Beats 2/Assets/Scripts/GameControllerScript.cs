@@ -158,14 +158,19 @@ public class GameControllerScript : MonoBehaviour
         }
     }
 
-
+    float[] noteMultipliers;
     //convert string ex: 1,2;6,3;7,1 into coordinates (1,2), (6,3), (7,1)
     void ProcessSequence() {
         string[] pairTokens = sequenceRaw.Split(';');
         sequence = new Vector2Int[pairTokens.Length];
-        for(int i = 0; i < pairTokens.Length; i++) {
-            string[] coordTokens = pairTokens[i].Split(',');
-            sequence[i] = new Vector2Int(int.Parse(coordTokens[0]), int.Parse(coordTokens[1]));
+        noteMultipliers = new float[pairTokens.Length];
+        for (int i = 0; i < pairTokens.Length; i++) {
+            char[] delimiters = { ',', 'x' };
+            string[] tokens = pairTokens[i].Split(delimiters);
+            sequence[i] = new Vector2Int(int.Parse(tokens[0]), int.Parse(tokens[1]));
+
+            //custom multiplier speed
+            noteMultipliers[i] = tokens.Length > 2 ? float.Parse(tokens[2]) : 1;
         }
     }
     
@@ -269,12 +274,12 @@ public class GameControllerScript : MonoBehaviour
         if (!NoteIsSilent(sequence[seqIndex])) {
             StartCoroutine(AnimateNote(sequence[seqIndex]));
         }
-        seqIndex++;
 
        
 
-        yield return new WaitForSeconds(60f / bpm);
+        yield return new WaitForSeconds((60f / bpm) * noteMultipliers[seqIndex]);
 
+        seqIndex++;
 
         if (seqIndex < sequence.Length)
             StartCoroutine(Beats());
