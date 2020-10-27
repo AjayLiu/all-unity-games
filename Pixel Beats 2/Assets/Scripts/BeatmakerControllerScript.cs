@@ -69,11 +69,11 @@ public class BeatmakerControllerScript : MonoBehaviour
         }
     }
 
-    SequenceElement CreateSequenceElement(Vector2Int pos, int ind) {
+    SequenceElement CreateSequenceElement(Vector2Int pos, int ind, float mult = 1) {
 
         GameObject frame = Instantiate(framePrefab, new Vector3(pos.x + 0.5f, pos.y + 0.5f, -5f), Quaternion.identity, framesParent.transform);
         SequenceElement elem = new SequenceElement(pos, frame, ind);
-        
+
         //if the ind does not match index, it means it should be inserted and every element in the sequence after must +1 to their index
         if(ind != index) {
             //shift all the elements after up by 1
@@ -85,6 +85,9 @@ public class BeatmakerControllerScript : MonoBehaviour
         }
         sequence.Insert(ind-1, elem);
 
+        elem.multiplier = mult;
+        //change the placeholder 
+        elem.multiplierText.transform.parent.GetComponentInChildren<Text>().text = sequence[i].multiplier.ToString();
 
         index++;
         return elem;
@@ -110,7 +113,14 @@ public class BeatmakerControllerScript : MonoBehaviour
         }
         return -1;
     }
-
+    int IndexOfHistoryAtPos(Vector2Int pos) {
+        for (int i = 0; i < history.Count; i++) {
+            if (history[i].seq.pos == pos) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
 
 
@@ -176,11 +186,12 @@ public class BeatmakerControllerScript : MonoBehaviour
                 int ind = IndexOfElementAtPos(h.seq.pos);
                 RemoveSequenceElement(sequence[ind], ind);
             } else {
-                CreateSequenceElement(h.seq.pos, h.seq.index);
+                CreateSequenceElement(h.seq.pos, h.seq.index, h.seq.multiplier);
+                print(h.seq.multiplier);
             }
         } else {
             if (h.wasAdded) {
-                CreateSequenceElement(h.seq.pos, h.seq.index);
+                CreateSequenceElement(h.seq.pos, h.seq.index, h.seq.multiplier);
             } else {
                 int ind = IndexOfElementAtPos(h.seq.pos);
                 RemoveSequenceElement(sequence[ind], ind);
@@ -208,7 +219,14 @@ public class BeatmakerControllerScript : MonoBehaviour
         foreach(SequenceElement s in sequence) {
             if (s.index == index) {
                 s.multiplier = newMult;
+                
+                //record change in history
+                int indexOfHistory = IndexOfHistoryAtPos(s.pos);
+                if (indexOfHistory != -1) {
+                    history[indexOfHistory].seq.multiplier = newMult;
+                }
             }
+
         }
     }
 
@@ -387,7 +405,8 @@ public class BeatmakerControllerScript : MonoBehaviour
     public InputField bpmInput;
     int bpm;
     public void BPMInput() {
-        bpm = int.Parse(bpmInput.text);
+        if(bpmInput.text != "")
+            bpm = int.Parse(bpmInput.text);
     }
 
     public InputField waitInput;
