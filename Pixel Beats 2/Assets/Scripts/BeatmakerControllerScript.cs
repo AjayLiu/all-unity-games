@@ -87,7 +87,7 @@ public class BeatmakerControllerScript : MonoBehaviour
 
         elem.multiplier = mult;
         //change the placeholder 
-        elem.multiplierText.transform.parent.GetComponentInChildren<Text>().text = sequence[i].multiplier.ToString();
+        elem.multiplierText.transform.parent.GetComponentInChildren<Text>().text = elem.multiplier.ToString();
 
         index++;
         return elem;
@@ -187,7 +187,6 @@ public class BeatmakerControllerScript : MonoBehaviour
                 RemoveSequenceElement(sequence[ind], ind);
             } else {
                 CreateSequenceElement(h.seq.pos, h.seq.index, h.seq.multiplier);
-                print(h.seq.multiplier);
             }
         } else {
             if (h.wasAdded) {
