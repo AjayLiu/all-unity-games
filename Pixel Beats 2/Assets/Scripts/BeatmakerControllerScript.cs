@@ -141,6 +141,7 @@ public class BeatmakerControllerScript : MonoBehaviour
         return results;
     }
 
+    public InputField exportField;
     public void Export() {
         //first is the sequence coordinates
         string results = SequenceToString();
@@ -150,7 +151,9 @@ public class BeatmakerControllerScript : MonoBehaviour
         //[1] = beginning time
         results += ";" + bpm.ToString() + ",";
         results += waitBeginningTime.ToString();
-        
+
+        exportField.text = results;
+
         print(results);
         //copy results to clipboard
         TextEditor te = new TextEditor();
@@ -159,6 +162,8 @@ public class BeatmakerControllerScript : MonoBehaviour
         te.Copy();
         
     }
+
+
 
     public struct HistoryElement {
         public SequenceElement seq;
