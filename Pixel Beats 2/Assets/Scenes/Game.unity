@@ -513,6 +513,7 @@ MonoBehaviour:
   autoGenerateSequence: 1
   pixelArtImage: {fileID: 1856963306}
   sequenceRaw: 0,0;1,0;2,0
+  audio: {fileID: 0}
   indicatorText: {fileID: 485190860}
   afterNoteThreshold: 0
   concurrentNotes: 3
@@ -520,7 +521,8 @@ MonoBehaviour:
   noteShrinkSpeed: 0.4
   framePrefab: {fileID: 5065045879890956757, guid: 5a2d52327e81f2340af7b8462f829d9f,
     type: 3}
-  beatDuration: 0.5
+  bpm: 168
+  waitBeginningTime: 0
 --- !u!4 &867946753
 Transform:
   m_ObjectHideFlags: 0
@@ -545,7 +547,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
+  m_audioClip: {fileID: 8300000, guid: cbb719a793d03424c91568b9a8145d45, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1

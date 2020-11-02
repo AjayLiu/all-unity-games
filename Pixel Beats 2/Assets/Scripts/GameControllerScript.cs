@@ -28,6 +28,8 @@ public class GameControllerScript : MonoBehaviour
             ProcessSequence();
 
         StartCoroutine(StartBeatmap());
+
+        audio.Play();
     }
 
     // Update is called once per frame
@@ -36,16 +38,26 @@ public class GameControllerScript : MonoBehaviour
         DetectPlayerTaps();
     }
 
+
+    public float clickDistanceRadius;
+
     void DetectPlayerTaps() {
         if (Input.GetKeyDown(KeyCode.Mouse0)) {
-            Vector2Int pos = Vector3To2Int(RoundDownVector3(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
+            Vector2 clickPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             //see if the user clicked on a valid note that is currently listening for input
+            //extract the note that was closest to the click
+            Note closestNote = new Note();
+            float closestDistance = 0;
             foreach (Note n in clickableNotes) {
-                if(n.location == pos) {
-                    OnNoteClicked(n);
-                    clickableNotes.Remove(n);
-                    break;
+                float distance = Vector2.Distance(clickPos, n.location);
+                if (closestDistance == 0 || distance < closestDistance) {
+                    closestNote = n;
+                    closestDistance = distance;
                 }
+            }
+            if(closestDistance < clickDistanceRadius) {
+                OnNoteClicked(closestNote);
+                clickableNotes.Remove(closestNote);
             }
         }
     }
@@ -152,9 +164,12 @@ public class GameControllerScript : MonoBehaviour
         }
 
         //copy tilePositions to sequence
+        //also initialize noteMultipliers to 1
         sequence = new Vector2Int[tilePositions.Count];
+        noteMultipliers = new float[tilePositions.Count];
         for (int i = 0; i < tilePositions.Count; i++) {
             sequence[i] = tilePositions[i];
+            noteMultipliers[i] = 1;
         }
     }
 
