@@ -125,9 +125,9 @@ public class BeatmakerControllerScript : MonoBehaviour
 
 
     //results follow the format pos1.x,pos1.y;pos2.x,pos2.y;pos3.x,pos3.y   ...etc
-    string SequenceToString() {
+    public static string SequenceToString(List<SequenceElement> list) {
         string results = "";
-        foreach (SequenceElement e in sequence) {
+        foreach (SequenceElement e in list) {
             results += e.pos.x + "," + e.pos.y;
 
             //add a multiplier if it exists so it becomes ex: 3,4x1.2 (at position (3,4) with note length 1.2x)
@@ -135,16 +135,16 @@ public class BeatmakerControllerScript : MonoBehaviour
                 results += "x" + e.multiplier.ToString();
             }
 
-            if (e != sequence[sequence.Count - 1])
+            if (e != list[list.Count - 1])
                 results += ";";
         }
         return results;
     }
 
-    public InputField exportField;
-    public void Export() {
+
+    public string Export() {
         //first is the sequence coordinates
-        string results = SequenceToString();
+        string results = SequenceToString(sequence);
 
         //append metadata
         //[0] = bpm
@@ -152,16 +152,16 @@ public class BeatmakerControllerScript : MonoBehaviour
         results += ";" + bpm.ToString() + ",";
         results += waitBeginningTime.ToString();
 
-        exportField.text = results;
-
-        print(results);
-        //copy results to clipboard
-        TextEditor te = new TextEditor();
-        te.text = results;
-        te.SelectAll();
-        te.Copy();
-        
+        return results;
     }
+
+    public InputField exportField;
+    public void Export(bool forButton) {
+        exportField.text = Export();
+    }
+
+    
+
 
 
 
@@ -262,7 +262,8 @@ public class BeatmakerControllerScript : MonoBehaviour
         yield return SceneManager.LoadSceneAsync("Game");
 
         //transfer info to game scene
-        TransferToGameScene();
+        BeatmapData data = new BeatmapData(pixelArtImage.texture, musicToPlay, Export());
+        data.InitGameScene();
 
         //hide this scene's pixelart
         pixelArtImage.gameObject.SetActive(false);
@@ -328,7 +329,7 @@ public class BeatmakerControllerScript : MonoBehaviour
         history.Clear();
         index = 1;
         historyIndex = 0;
-    }
+    }    
 
     void ImportSequence(string s) {
 
@@ -419,24 +420,52 @@ public class BeatmakerControllerScript : MonoBehaviour
         waitBeginningTime = float.Parse(waitInput.text);
     }
 
-    void TransferToGameScene() {
+    
+
+    
+}
+
+[System.Serializable]
+public struct BeatmapData {
+
+    public Texture pixelArtTexture;
+    public string exportString;
+    public AudioClip music;
+
+    public BeatmapData(Texture t, AudioClip a, string s) {
+        pixelArtTexture = t;
+        music = a;
+        exportString = s;
+
+        sequence = exportString.Substring(0, exportString.LastIndexOf(';'));
+        bpm = int.Parse(exportString.Substring(exportString.LastIndexOf(';') + 1, exportString.LastIndexOf(',') - exportString.LastIndexOf(';') - 1));
+        waitBeginningTime = float.Parse(exportString.Substring(exportString.LastIndexOf(',') + 1));
+    }
+
+
+    string sequence;
+    int bpm;
+    float waitBeginningTime;
+
+    public int CalculateMaxScore() {
+        return exportString.Split(';').Length - 1;
+    }
+
+    public void InitGameScene() {
         GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
-        game.pixelArtImage.texture = pixelArtImage.texture;
+        game.pixelArtImage.texture = pixelArtTexture;
         ((Texture2D)game.pixelArtImage.texture).Apply();
 
-        game.sequenceRaw = SequenceToString();
+        game.sequenceRaw = sequence;
         game.autoGenerateSequence = false;
 
         game.audio = game.GetComponent<AudioSource>();
-        game.audio.clip = musicToPlay;
+        game.audio.clip = music;
         game.audio.Play();
 
         game.UpdateBPM(bpm);
-
         game.waitBeginningTime = waitBeginningTime;
     }
-
-    
 }
 
 public class SequenceElement {
