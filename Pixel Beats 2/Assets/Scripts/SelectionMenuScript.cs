@@ -19,9 +19,10 @@ public class SelectionMenuScript : MonoBehaviour
 
 
     void PopulateScrollList() {
-        foreach(SongInformation song in songs) {
-            SongItemScript item = Instantiate(songItemPrefab, contentParent).GetComponent<SongItemScript>();
-            item.Init(song);
+        for(int i = 0; i < songs.Count; i++) {
+            SongInformation song = songs[i];
+            SongItemScript item = Instantiate(songItemPrefab, contentParent).GetComponent<SongItemScript>();          
+            item.Init(song, i);
         }
     }
 
@@ -32,7 +33,6 @@ public class SelectionMenuScript : MonoBehaviour
     }
 
     public void LoadSong(int index) {
-
         StartCoroutine(LoadGame(index));
     }
 
@@ -41,6 +41,7 @@ public class SelectionMenuScript : MonoBehaviour
         yield return SceneManager.LoadSceneAsync("Game");
 
         //transfer info to game scene
+        songs[index].data.InitMetadata();
         songs[index].data.InitGameScene();
     }
 

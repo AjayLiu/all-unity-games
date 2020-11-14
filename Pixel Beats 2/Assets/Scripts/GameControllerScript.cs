@@ -19,17 +19,15 @@ public class GameControllerScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        audio = GetComponent<AudioSource>();
-
+        audio = GetComponent<AudioSource>();        
+        
         ProcessTexture2D();
         if (autoGenerateSequence)
             GenerateRandomSequence();
         else
             ProcessSequence();
-
-        StartCoroutine(StartBeatmap());
-
         audio.Play();
+        StartCoroutine(StartBeatmap());
     }
 
     // Update is called once per frame
@@ -37,7 +35,6 @@ public class GameControllerScript : MonoBehaviour
     {
         DetectPlayerTaps();
     }
-
 
     public float clickDistanceRadius;
 

@@ -20,7 +20,9 @@ public class SongItemScript : MonoBehaviour
         button.onClick.AddListener(OnClick);
     }    
 
-    public void Init(SongInformation info) {
+    public void Init(SongInformation info, int index) {
+        this.index = index;
+
         titleText.text = info.title;
         descriptionText.text = info.description;
         logo.sprite = info.img;

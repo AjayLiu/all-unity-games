@@ -426,7 +426,7 @@ public class BeatmakerControllerScript : MonoBehaviour
 }
 
 [System.Serializable]
-public struct BeatmapData {
+public class BeatmapData {
 
     public Texture pixelArtTexture;
     public string exportString;
@@ -437,15 +437,19 @@ public struct BeatmapData {
         music = a;
         exportString = s;
 
+        InitMetadata();
+    }
+
+    public void InitMetadata(){
         sequence = exportString.Substring(0, exportString.LastIndexOf(';'));
         bpm = int.Parse(exportString.Substring(exportString.LastIndexOf(';') + 1, exportString.LastIndexOf(',') - exportString.LastIndexOf(';') - 1));
         waitBeginningTime = float.Parse(exportString.Substring(exportString.LastIndexOf(',') + 1));
     }
 
 
-    string sequence;
-    int bpm;
-    float waitBeginningTime;
+    string sequence = "";
+    int bpm = 0;
+    float waitBeginningTime = 0;
 
     public int CalculateMaxScore() {
         return exportString.Split(';').Length - 1;
@@ -455,6 +459,7 @@ public struct BeatmapData {
         GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
         game.pixelArtImage.texture = pixelArtTexture;
         ((Texture2D)game.pixelArtImage.texture).Apply();
+
 
         game.sequenceRaw = sequence;
         game.autoGenerateSequence = false;
