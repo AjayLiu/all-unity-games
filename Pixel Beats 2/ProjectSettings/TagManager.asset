@@ -6,6 +6,7 @@ TagManager:
   tags:
   - BeatmapGameController
   - SelectionGameController
+  - GameSceneDontDestroy
   layers:
   - Default
   - TransparentFX

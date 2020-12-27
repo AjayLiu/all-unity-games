@@ -5,6 +5,9 @@ using UnityEngine.SceneManagement;
 
 public class SelectionMenuScript : MonoBehaviour
 {
+
+    public int currentIndex = -1;
+
     public GameObject songItemPrefab;
     public Transform contentParent;
     public List<SongInformation> songs = new List<SongInformation>();
@@ -37,12 +40,13 @@ public class SelectionMenuScript : MonoBehaviour
     }
 
     IEnumerator LoadGame(int index) {
+        currentIndex = index;
         //wait for scene to be loaded
         yield return SceneManager.LoadSceneAsync("Game");
 
         //transfer info to game scene
         songs[index].data.InitMetadata();
-        songs[index].data.InitGameScene();
+        songs[index].data.InitGameScene(optionalIndex: index);
     }
 
 }

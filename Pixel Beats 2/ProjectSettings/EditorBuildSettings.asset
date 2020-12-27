@@ -9,6 +9,12 @@ EditorBuildSettings:
     path: Assets/Scenes/Beatmap Maker.unity
     guid: edbfa8e4144f14143b9baa2867243bcb
   - enabled: 1
+    path: Assets/Scenes/Selection Menu.unity
+    guid: e3668c1c08310ad4f81d5b37b1674a8f
+  - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: 2cda990e2423bbf4892e6590ba056729
+  - enabled: 1
+    path: Assets/Scenes/GameOver.unity
+    guid: dc01241059ab21b44b64e944f7038ce9
   m_configObjects: {}

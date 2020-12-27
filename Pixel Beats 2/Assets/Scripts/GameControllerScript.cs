@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameControllerScript : MonoBehaviour
 {
@@ -14,7 +15,11 @@ public class GameControllerScript : MonoBehaviour
     Vector2Int[] sequence;
 
     [HideInInspector]public AudioSource audio;
-    
+
+    [HideInInspector] public int currentSongIndex;
+    SongInformation currentSongInfo;
+
+    int score = 0, notesHit = 0, notesTotal = 0, highestCombo = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -28,6 +33,9 @@ public class GameControllerScript : MonoBehaviour
             ProcessSequence();
         audio.Play();
         StartCoroutine(StartBeatmap());
+
+        if(currentSongIndex > -1)
+            currentSongInfo = GameObject.FindGameObjectWithTag("SelectionGameController").GetComponent<SelectionMenuScript>().songs[currentSongIndex];
     }
 
     // Update is called once per frame
@@ -44,10 +52,10 @@ public class GameControllerScript : MonoBehaviour
             //see if the user clicked on a valid note that is currently listening for input
             //extract the note that was closest to the click
             Note closestNote = new Note();
-            float closestDistance = 0;
+            float closestDistance = -1f;
             foreach (Note n in clickableNotes) {
-                float distance = Vector2.Distance(clickPos, n.location);
-                if (closestDistance == 0 || distance < closestDistance) {
+                float distance = Vector2.Distance(clickPos, n.frame.transform.position);
+                if (closestDistance == -1f || distance < closestDistance) {
                     closestNote = n;
                     closestDistance = distance;
                 }
@@ -56,6 +64,7 @@ public class GameControllerScript : MonoBehaviour
                 OnNoteClicked(closestNote);
                 clickableNotes.Remove(closestNote);
             }
+
         }
     }
 
@@ -65,35 +74,39 @@ public class GameControllerScript : MonoBehaviour
 
     public Text indicatorText;
 
+    int scoreMultiplier = 1;
+
     void OnNoteClicked(Note note) {
-        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - 3*(1/(bpm / 60f)));
+        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - 3*(1/(bpm / 60f)));       
         if(timeDifference < 0.2f) {
             UpdateIndicatorAndStreak(NoteResult.Perfect);
+            score += 100 * scoreMultiplier;
         } else if(timeDifference < 0.4f){
             UpdateIndicatorAndStreak(NoteResult.Great);
+            score += 75 * scoreMultiplier;
         } else if (timeDifference < 0.6f) {
             UpdateIndicatorAndStreak(NoteResult.Ok);
+            score += 50 * scoreMultiplier;
         } else {
+            score += 25 * scoreMultiplier;
             UpdateIndicatorAndStreak(NoteResult.Bad);
         }
-
+        UpdateScoreUI();
         note.frame.SetActive(false);
+        notesHit++;
     }
 
     void OnNoteMissed() {
         UpdateIndicatorAndStreak(NoteResult.Missed);
     }
-
-
     int streak = 0;
     void UpdateIndicatorAndStreak(NoteResult result) {
-        
-
         //kill streak
         if(result == NoteResult.Missed || result == NoteResult.Bad) {
             streak = 0;
         } else {
             streak++;
+            highestCombo = Mathf.Max(streak, highestCombo);
         }
 
         switch (result) {
@@ -115,6 +128,9 @@ public class GameControllerScript : MonoBehaviour
         }
     }
 
+    void UpdateScoreUI() {
+
+    }
 
     void ProcessTexture2D() {
         originalPixelArt = (Texture2D)pixelArtImage.texture;
@@ -284,6 +300,7 @@ public class GameControllerScript : MonoBehaviour
 
         //skip if it is a silent beat
         if (!NoteIsSilent(sequence[seqIndex])) {
+            notesTotal++;
             StartCoroutine(AnimateNote(sequence[seqIndex]));
         }
 
@@ -295,8 +312,39 @@ public class GameControllerScript : MonoBehaviour
 
         if (seqIndex < sequence.Length)
             StartCoroutine(Beats());
+        else {
+            StartCoroutine(GameOver());
+        }
     }
 
+
+
+    static GameData gameData;
+
+    IEnumerator GameOver() {
+        //wait for all the current active beats to die out first before ending the game
+        yield return new WaitUntil(()=>clickableNotes.Count==0);
+
+
+        gameData = new GameData();
+
+        GameData.score = score;
+
+        GameData.highScore = Mathf.Max(score, PlayerPrefs.GetInt(currentSongInfo.title, 0));
+        PlayerPrefs.SetInt(currentSongInfo.title, GameData.highScore);
+
+        GameData.highestCombo = highestCombo;
+
+        GameData.numNotesHit = notesHit;
+
+        GameData.numNotesTotal = notesTotal;
+
+        yield return new WaitForSeconds(2);
+
+        
+
+        SceneManager.LoadScene("GameOver");
+    }
 
     public void UpdateBPM(int bpm) {
         this.bpm = bpm;

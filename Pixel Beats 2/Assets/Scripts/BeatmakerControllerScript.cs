@@ -455,11 +455,12 @@ public class BeatmapData {
         return exportString.Split(';').Length - 1;
     }
 
-    public void InitGameScene() {
+    public void InitGameScene(int optionalIndex = -1) {
         GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
         game.pixelArtImage.texture = pixelArtTexture;
         ((Texture2D)game.pixelArtImage.texture).Apply();
 
+        game.currentSongIndex = optionalIndex;
 
         game.sequenceRaw = sequence;
         game.autoGenerateSequence = false;
