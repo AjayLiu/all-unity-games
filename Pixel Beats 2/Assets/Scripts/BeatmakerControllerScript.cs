@@ -263,7 +263,7 @@ public class BeatmakerControllerScript : MonoBehaviour
 
         //transfer info to game scene
         BeatmapData data = new BeatmapData(pixelArtImage.texture, musicToPlay, Export());
-        data.InitGameScene();
+        data.InitGameScene(optionalPreviewMode: true);
 
         //hide this scene's pixelart
         pixelArtImage.gameObject.SetActive(false);
@@ -455,7 +455,7 @@ public class BeatmapData {
         return exportString.Split(';').Length - 1;
     }
 
-    public void InitGameScene(int optionalIndex = -1) {
+    public void InitGameScene(int optionalIndex = -1, bool optionalPreviewMode = false) {
         GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
         game.pixelArtImage.texture = pixelArtTexture;
         ((Texture2D)game.pixelArtImage.texture).Apply();
@@ -471,6 +471,8 @@ public class BeatmapData {
 
         game.UpdateBPM(bpm);
         game.waitBeginningTime = waitBeginningTime;
+
+        game.isPreviewMode = optionalPreviewMode;
     }
 }
 

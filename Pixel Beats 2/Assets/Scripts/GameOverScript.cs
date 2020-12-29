@@ -22,7 +22,7 @@ public class GameOverScript : MonoBehaviour
         RectTransform rect = item.GetComponent<RectTransform>();
         rect.anchoredPosition = Vector2.zero;
         rect.localPosition = Vector2.zero;
-        rect.localScale = Vector3.one * 0.6f;
+        //rect.localScale = Vector3.one * 0.6f;
 
         LoadStats();
         

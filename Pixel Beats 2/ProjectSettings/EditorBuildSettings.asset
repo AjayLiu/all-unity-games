@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Start Menu.unity
+    guid: 5c847feb77ed179459eb3dcd767d0d67
+  - enabled: 1
     path: Assets/Scenes/Beatmap Maker.unity
     guid: edbfa8e4144f14143b9baa2867243bcb
   - enabled: 1

@@ -49,6 +49,9 @@ public class SelectionMenuScript : MonoBehaviour
         songs[index].data.InitGameScene(optionalIndex: index);
     }
 
+    public void ReturnToMenuButton() {
+        SceneManager.LoadScene("Start Menu");
+    }
 }
 
 [System.Serializable]

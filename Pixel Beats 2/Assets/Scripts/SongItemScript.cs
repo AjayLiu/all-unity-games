@@ -28,7 +28,7 @@ public class SongItemScript : MonoBehaviour
         logo.sprite = info.img;
 
         difficultyText.text = info.difficulty.ToString();
-        difficultyImage.fillAmount = info.difficulty / 10f;
+        difficultyImage.fillAmount = info.difficulty / 5f;
 
 
         int highScore = PlayerPrefs.GetInt(titleText.text, 0);

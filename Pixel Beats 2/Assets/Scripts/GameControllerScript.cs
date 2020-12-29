@@ -21,9 +21,15 @@ public class GameControllerScript : MonoBehaviour
 
     int score = 0, notesHit = 0, notesTotal = 0, highestCombo = 0;
 
+    bool allowInput = true;
+
+    SelectionMenuScript selectionMenuScript;
+
     // Start is called before the first frame update
     void Start()
     {
+        Time.timeScale = 1f;
+
         audio = GetComponent<AudioSource>();        
         
         ProcessTexture2D();
@@ -34,37 +40,57 @@ public class GameControllerScript : MonoBehaviour
         audio.Play();
         StartCoroutine(StartBeatmap());
 
-        if(currentSongIndex > -1)
-            currentSongInfo = GameObject.FindGameObjectWithTag("SelectionGameController").GetComponent<SelectionMenuScript>().songs[currentSongIndex];
+
+        pausePanel.SetActive(false);
+        warningPanel.SetActive(false);
+
+        selectionMenuScript = GameObject.FindGameObjectWithTag("SelectionGameController").GetComponent<SelectionMenuScript>();
+
+        if (currentSongIndex > -1)
+            currentSongInfo = selectionMenuScript.songs[currentSongIndex];
+
+
+        //Load in binds for click
+        clickKeys = new KeyCode[] { KeyCode.Mouse0, (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click0", "X")), (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click1", "Z")) };
+        audio.volume = PlayerPrefs.GetFloat("Volume", 0.5f);
     }
 
     // Update is called once per frame
     void Update()
     {
-        DetectPlayerTaps();
+        if(allowInput)
+            DetectPlayerTaps();
     }
 
     public float clickDistanceRadius;
 
+    KeyCode[] clickKeys;
+
     void DetectPlayerTaps() {
-        if (Input.GetKeyDown(KeyCode.Mouse0)) {
-            Vector2 clickPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            //see if the user clicked on a valid note that is currently listening for input
-            //extract the note that was closest to the click
-            Note closestNote = new Note();
-            float closestDistance = -1f;
-            foreach (Note n in clickableNotes) {
-                float distance = Vector2.Distance(clickPos, n.frame.transform.position);
-                if (closestDistance == -1f || distance < closestDistance) {
-                    closestNote = n;
-                    closestDistance = distance;
+        foreach(KeyCode keycode in clickKeys) {
+            if (Input.GetKeyDown(keycode)) {
+                Vector2 clickPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                //see if the user clicked on a valid note that is currently listening for input
+                //extract the note that was closest to the click
+                //Note closestNote = new Note();
+                //float closestDistance = -1f;
+                //foreach (Note n in clickableNotes) {
+                //    float distance = Vector2.Distance(clickPos, n.frame.transform.position);
+                //    if (closestDistance == -1f || distance < closestDistance) {
+                //        closestNote = n;
+                //        closestDistance = distance;
+                //    }
+                //}
+                //if (closestDistance < clickDistanceRadius) {
+                //    OnNoteClicked(closestNote);
+                //    clickableNotes.Remove(closestNote);
+                //}
+
+                if(Vector2.Distance(clickPos, clickableNotes[0].frame.transform.position) < clickDistanceRadius) {
+                    OnNoteClicked(clickableNotes[0]);
+                    clickableNotes.RemoveAt(0);
                 }
             }
-            if(closestDistance < clickDistanceRadius) {
-                OnNoteClicked(closestNote);
-                clickableNotes.Remove(closestNote);
-            }
-
         }
     }
 
@@ -72,13 +98,34 @@ public class GameControllerScript : MonoBehaviour
         Perfect, Great, Ok, Bad, Missed
     };
 
-    public Text indicatorText;
+    public Text indicatorText, scoreText;
 
     int scoreMultiplier = 1;
 
+    [System.Serializable]
+    public struct MultiplierTier {
+        public int multiplier;
+        public int streaksNeeded;
+        public Color streakColor;
+    };
+
+    public MultiplierTier[] multiplierTiers;
+    int multiplierTierIndex = 0;
+
     void OnNoteClicked(Note note) {
-        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - 3*(1/(bpm / 60f)));       
-        if(timeDifference < 0.2f) {
+        float timeDifference = Mathf.Abs(Time.time - note.spawnTime - 3*(1/(bpm / 60f)));
+
+        //Check if able to advance to next streak tier
+        if(multiplierTierIndex != multiplierTiers.Length - 1) {
+            if (streak > multiplierTiers[multiplierTierIndex + 1].streaksNeeded) {
+                multiplierTierIndex++;
+                UpdateNewMultiplerTier(multiplierTiers[multiplierTierIndex]);
+            }
+        }
+        
+        
+
+        if (timeDifference < 0.2f) {
             UpdateIndicatorAndStreak(NoteResult.Perfect);
             score += 100 * scoreMultiplier;
         } else if(timeDifference < 0.4f){
@@ -96,18 +143,29 @@ public class GameControllerScript : MonoBehaviour
         notesHit++;
     }
 
+    void UpdateNewMultiplerTier(MultiplierTier tier) {
+        scoreMultiplier = tier.multiplier;
+        indicatorText.color = tier.streakColor;
+    }
+
     void OnNoteMissed() {
         UpdateIndicatorAndStreak(NoteResult.Missed);
+        if(enableMetronome)
+            metronomeAudio.Play();
     }
+
     int streak = 0;
     void UpdateIndicatorAndStreak(NoteResult result) {
         //kill streak
         if(result == NoteResult.Missed || result == NoteResult.Bad) {
             streak = 0;
+            UpdateNewMultiplerTier(multiplierTiers[0]);
         } else {
             streak++;
             highestCombo = Mathf.Max(streak, highestCombo);
         }
+
+
 
         switch (result) {
             case NoteResult.Perfect:
@@ -129,7 +187,7 @@ public class GameControllerScript : MonoBehaviour
     }
 
     void UpdateScoreUI() {
-
+        scoreText.text = score.ToString();
     }
 
     void ProcessTexture2D() {
@@ -261,7 +319,7 @@ public class GameControllerScript : MonoBehaviour
 
         //smoothly animate the outer ring to spin to targetAngles (full 180)
         float timeElapsed = 0;
-        while(timeElapsed < (60f / bpm) * concurrentNotes) {
+        while(timeElapsed < (60f / bpm) * 3) {
             // outerFrameTransform.eulerAngles = Vector3.Lerp(outerFrameTransform.eulerAngles, targetAngles, noteTurnSpeed * Time.deltaTime);
             // outerFrameTransform.localScale = Vector3.Lerp(outerFrameTransform.localScale, new Vector3(0.2f, 0.2f, 1f), noteShrinkSpeed * Time.deltaTime);
 
@@ -295,6 +353,9 @@ public class GameControllerScript : MonoBehaviour
         StartCoroutine(Beats());
     }
 
+    public bool enableMetronome = false;
+    public AudioSource metronomeAudio;    
+
     //Called recursively every beat
     IEnumerator Beats() {
 
@@ -317,33 +378,32 @@ public class GameControllerScript : MonoBehaviour
         }
     }
 
-
-
     static GameData gameData;
+    [HideInInspector] public bool isPreviewMode = false;
 
     IEnumerator GameOver() {
         //wait for all the current active beats to die out first before ending the game
-        yield return new WaitUntil(()=>clickableNotes.Count==0);
-
-
-        gameData = new GameData();
-
-        GameData.score = score;
-
-        GameData.highScore = Mathf.Max(score, PlayerPrefs.GetInt(currentSongInfo.title, 0));
-        PlayerPrefs.SetInt(currentSongInfo.title, GameData.highScore);
-
-        GameData.highestCombo = highestCombo;
-
-        GameData.numNotesHit = notesHit;
-
-        GameData.numNotesTotal = notesTotal;
-
+        yield return new WaitUntil(()=>clickableNotes.Count==0);        
         yield return new WaitForSeconds(2);
 
-        
 
-        SceneManager.LoadScene("GameOver");
+        if (!isPreviewMode) {
+            gameData = new GameData();
+
+            GameData.score = score;
+
+            GameData.highScore = Mathf.Max(score, PlayerPrefs.GetInt(currentSongInfo.title, 0));
+            PlayerPrefs.SetInt(currentSongInfo.title, GameData.highScore);
+
+            GameData.highestCombo = highestCombo;
+
+            GameData.numNotesHit = notesHit;
+
+            GameData.numNotesTotal = notesTotal;
+
+            SceneManager.LoadScene("GameOver");
+        }
+        
     }
 
     public void UpdateBPM(int bpm) {
@@ -351,6 +411,62 @@ public class GameControllerScript : MonoBehaviour
         noteShrinkSpeed = bpm / 300f;
     }
 
+
+
+    #region PauseMenu
+
+    public GameObject pausePanel, warningPanel;
+    public Text warningText;
+
+    public void PauseButton() {
+        audio.Pause();
+        pausePanel.SetActive(true);
+        allowInput = false;
+        Time.timeScale = 0;        
+    }
+
+    public void ResumeButton() {
+        audio.UnPause();
+        pausePanel.SetActive(false);
+        allowInput = true;
+        Time.timeScale = 1f;
+    }
+
+    enum RedirectYesButtonTo { Restart, Home };
+    RedirectYesButtonTo redir;
+
+    public void OnYesButton() {
+        switch (redir) {
+            case RedirectYesButtonTo.Home:
+                SceneManager.LoadScene("Start Menu");
+                break;
+            case RedirectYesButtonTo.Restart:
+                Restart();
+                break;
+        }
+    }
+
+    public void OnNoButton() {
+        warningPanel.SetActive(false);
+    }
+
+    public void RestartButtonPress() {
+        warningPanel.SetActive(true);
+        redir = RedirectYesButtonTo.Restart;
+        warningText.text = "You will lose all your progress for this song. \n\nAre you sure you want to restart?";
+    }
+
+    public void Restart() {
+        selectionMenuScript.LoadSong(selectionMenuScript.currentIndex);
+    }
+
+    public void HomeButton() {
+        warningPanel.SetActive(true);
+        redir = RedirectYesButtonTo.Home;
+        warningText.text = "You will lose all your progress for this song. \n\nAre you sure you want to return to the main menu?";
+    }
+
+    #endregion
 
 
 
