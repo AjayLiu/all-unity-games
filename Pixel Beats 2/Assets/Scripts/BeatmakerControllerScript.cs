@@ -219,6 +219,10 @@ public class BeatmakerControllerScript : MonoBehaviour
         }
     }
 
+    public void SkipSeconds(float seconds) {
+        GameControllerScript game = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameControllerScript>();
+        game.audio.time += seconds;
+    }
 
     public void OnMultiplierChange(int index, float newMult) {
         foreach(SequenceElement s in sequence) {

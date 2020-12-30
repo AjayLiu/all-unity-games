@@ -43,8 +43,9 @@ public class GameControllerScript : MonoBehaviour
 
         pausePanel.SetActive(false);
         warningPanel.SetActive(false);
+        settingsWindow.SetActive(false);
 
-        if(!isPreviewMode)
+        if (!isPreviewMode)
             selectionMenuScript = GameObject.FindGameObjectWithTag("SelectionGameController").GetComponent<SelectionMenuScript>();
 
         if (currentSongIndex > -1)
@@ -56,11 +57,33 @@ public class GameControllerScript : MonoBehaviour
 
 
         //Load in binds for click
-        clickKeys = new KeyCode[] { KeyCode.Mouse0, (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click0", "X")), (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click1", "Z")) };
-        audio.volume = PlayerPrefs.GetFloat("Volume", 0.5f);
+        LoadSavedSettings();
+        
+
+
+        //pool in some frames
+        int poolFrameCount = 8;
+        for(int i = 0; i < poolFrameCount; i++) {
+            GameObject frame = Instantiate(framePrefab, new Vector3(1000,1000), Quaternion.identity);
+            framesQueue.Enqueue(frame);
+        }
+
 
         StartCoroutine(StartBeatmap());
 
+
+    }
+
+    void LoadSavedSettings() {
+        clickKeys = new KeyCode[] { KeyCode.Mouse0, (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click0", "X")), (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click1", "Z")) };
+        audio.volume = PlayerPrefs.GetFloat("Volume", 0.5f);
+
+        volumeSlider.value = PlayerPrefs.GetFloat("Volume", 0.5f);
+        
+        for (int i = 0; i < bindButtonTexts.Length; i++) {
+            if (PlayerPrefs.HasKey("Click" + i))
+                bindButtonTexts[i].text = PlayerPrefs.GetString("Click" + i);
+        }
 
     }
 
@@ -79,7 +102,6 @@ public class GameControllerScript : MonoBehaviour
     }
 
     public float clickDistanceRadius;
-
     KeyCode[] clickKeys;
 
     void DetectPlayerTaps() {
@@ -103,7 +125,7 @@ public class GameControllerScript : MonoBehaviour
                 //    clickableNotes.Remove(closestNote);
                 //}
 
-                if(Vector2.Distance(clickPos, clickableNotes[0].frame.transform.position) < clickDistanceRadius) {
+                if(clickableNotes.Count > 0 && Vector2.Distance(clickPos, clickableNotes[0].frame.transform.position) < clickDistanceRadius) {
                     OnNoteClicked(clickableNotes[0]);
                     clickableNotes.RemoveAt(0);
                 }
@@ -142,13 +164,13 @@ public class GameControllerScript : MonoBehaviour
         
         
 
-        if (timeDifference < 0.2f) {
+        if (timeDifference < 0.05f) {
             UpdateIndicatorAndStreak(NoteResult.Perfect);
             score += 100 * scoreMultiplier;
-        } else if(timeDifference < 0.4f){
+        } else if(timeDifference < 0.1f){
             UpdateIndicatorAndStreak(NoteResult.Great);
             score += 75 * scoreMultiplier;
-        } else if (timeDifference < 0.6f) {
+        } else if (timeDifference < 0.2f) {
             UpdateIndicatorAndStreak(NoteResult.Ok);
             score += 50 * scoreMultiplier;
         } else {
@@ -165,7 +187,6 @@ public class GameControllerScript : MonoBehaviour
     void UpdateNewMultiplerTier(MultiplierTier tier) {
         scoreMultiplier = tier.multiplier;
         multiplierText.text = "x" + tier.multiplier;
-        indicatorText.color = tier.streakColor;
         multiplierText.color = tier.streakColor;
     }
 
@@ -175,6 +196,7 @@ public class GameControllerScript : MonoBehaviour
     }
 
     int streak = 0;
+    public Color[] noteResultColors;
     void UpdateIndicatorAndStreak(NoteResult result) {
         //kill streak
         if(result == NoteResult.Missed || result == NoteResult.Bad) {
@@ -192,21 +214,27 @@ public class GameControllerScript : MonoBehaviour
         switch (result) {
             case NoteResult.Perfect:
                 indicatorText.text = "Perfect! x" + streak;
+                indicatorText.color = noteResultColors[0];
                 break;
             case NoteResult.Great:
                 indicatorText.text = "Great! x" + streak;
+                indicatorText.color = noteResultColors[1];
                 break;
             case NoteResult.Ok:
                 indicatorText.text = "Ok! x" + streak;
+                indicatorText.color = noteResultColors[2];
                 break;
             case NoteResult.Bad:
                 indicatorText.text = "Bad!";
+                indicatorText.color = noteResultColors[3];
                 break;
             case NoteResult.Missed:
                 indicatorText.text = "Missed!";
+                indicatorText.color = noteResultColors[4];
                 break;
         }
     }
+
 
     void UpdateScoreUI() {
         scoreText.text = score.ToString();
@@ -316,7 +344,7 @@ public class GameControllerScript : MonoBehaviour
         Vector3 framePos = new Vector3(sequence[seqIndex].x + 0.5f, sequence[seqIndex].y + 0.5f, -1);
 
         //try to reuse from existing frames
-        if(framesQueue.Count != 0 && !framesQueue.Peek().activeInHierarchy) {
+        if (framesQueue.Count != 0 && !framesQueue.Peek().activeInHierarchy) {
             frame = framesQueue.Dequeue();
         } else {
             //make new frame
@@ -381,9 +409,7 @@ public class GameControllerScript : MonoBehaviour
 
     public float waitBeginningTime = 0;
     IEnumerator StartBeatmap() {
-
-        yield return new WaitForSeconds(2);
-
+        yield return new WaitForSeconds(1f);
 
         audio.Play();
 
@@ -413,7 +439,7 @@ public class GameControllerScript : MonoBehaviour
     public bool enableMetronome = false;
     public AudioSource metronomeAudio;
 
-    float expectedAudioPosition = 0;
+    [HideInInspector]public float expectedAudioPosition = 0;
     //Called recursively every beat
     IEnumerator Beats() {
 
@@ -500,6 +526,49 @@ public class GameControllerScript : MonoBehaviour
         allowInput = true;
         Time.timeScale = 1f;
     }
+
+
+    /* SETTINGS */
+    public GameObject settingsWindow;
+    public void SettingsButton() {
+        settingsWindow.SetActive(true);
+    }
+
+    public void XButton() {
+        LoadSavedSettings();
+        settingsWindow.SetActive(false);
+    }
+
+    public Slider volumeSlider;
+    public void OnVolumeChanged() {
+        PlayerPrefs.SetFloat("Volume", volumeSlider.value);
+    }
+
+
+    public void ChangeBind(int bindID) {
+        StartCoroutine(BindProcess(bindID));
+    }
+
+    KeyCode userPressedKey;
+    public Text[] bindDescriptions, bindButtonTexts;
+
+    IEnumerator BindProcess(int bindID) {
+        bindButtonTexts[bindID].text = "...";
+        string originalDescription = bindDescriptions[bindID].text;
+        bindDescriptions[bindID].text = "Press key to bind";
+
+        yield return new WaitUntil(() => Input.anyKeyDown);
+
+        foreach (KeyCode kcode in System.Enum.GetValues(typeof(KeyCode))) {
+            if (Input.GetKeyDown(kcode)) {
+                bindButtonTexts[bindID].text = kcode.ToString();
+                bindDescriptions[bindID].text = originalDescription;
+                PlayerPrefs.SetString("Click" + bindID, kcode.ToString());
+            }
+        }
+    }
+    /* END SETTINGS */
+
 
     enum RedirectYesButtonTo { Restart, Home };
     RedirectYesButtonTo redir;

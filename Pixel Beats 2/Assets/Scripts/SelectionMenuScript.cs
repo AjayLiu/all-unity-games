@@ -56,7 +56,9 @@ public class SelectionMenuScript : MonoBehaviour
 
 [System.Serializable]
 public struct SongInformation {
-    public string title, description;
+    public string title;
+    [TextArea]
+    public string description;
     public Sprite img;
     public float difficulty;
 
