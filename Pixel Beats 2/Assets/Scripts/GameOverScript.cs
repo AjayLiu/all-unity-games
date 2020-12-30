@@ -39,8 +39,9 @@ public class GameOverScript : MonoBehaviour
     void LoadStats() {
         gameData = new GameData();
         scoreText.text = "Your Score: " + GameData.score.ToString();
-        highScoreText.text = "High Score: " + GameData.highScore.ToString();       
-        accuracyText.text = "Accuracy: " + (100f * GameData.numNotesHit / GameData.numNotesTotal).ToString("#.##") + "%";
+        highScoreText.text = "High Score: " + GameData.highScore.ToString();
+        float accuracy = 100f * GameData.numNotesHit / GameData.numNotesTotal;
+        accuracyText.text = "Accuracy: " + (accuracy == 0 ? "0" : accuracy.ToString("#.##")) + "%";
         comboText.text = "Highest Combo: " + GameData.highestCombo.ToString();
     }
 

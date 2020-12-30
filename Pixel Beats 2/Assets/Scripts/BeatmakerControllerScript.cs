@@ -26,6 +26,7 @@ public class BeatmakerControllerScript : MonoBehaviour
             selfInstance = this;
         else
             Destroy(dontDestroyParent);
+
     }
 
     // Update is called once per frame
@@ -420,9 +421,6 @@ public class BeatmakerControllerScript : MonoBehaviour
         waitBeginningTime = float.Parse(waitInput.text);
     }
 
-    
-
-    
 }
 
 [System.Serializable]
@@ -467,7 +465,7 @@ public class BeatmapData {
 
         game.audio = game.GetComponent<AudioSource>();
         game.audio.clip = music;
-        game.audio.Play();
+        //game.audio.Play();
 
         game.UpdateBPM(bpm);
         game.waitBeginningTime = waitBeginningTime;

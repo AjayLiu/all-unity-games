@@ -28,6 +28,8 @@ public class GameControllerScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        
+
         Time.timeScale = 1f;
 
         audio = GetComponent<AudioSource>();        
@@ -37,29 +39,43 @@ public class GameControllerScript : MonoBehaviour
             GenerateRandomSequence();
         else
             ProcessSequence();
-        audio.Play();
-        StartCoroutine(StartBeatmap());
 
 
         pausePanel.SetActive(false);
         warningPanel.SetActive(false);
 
-        selectionMenuScript = GameObject.FindGameObjectWithTag("SelectionGameController").GetComponent<SelectionMenuScript>();
+        if(!isPreviewMode)
+            selectionMenuScript = GameObject.FindGameObjectWithTag("SelectionGameController").GetComponent<SelectionMenuScript>();
 
         if (currentSongIndex > -1)
             currentSongInfo = selectionMenuScript.songs[currentSongIndex];
+
+        multiplierText = indicatorText.transform.GetChild(0).GetComponent<Text>();
+        multiplierText.gameObject.SetActive(false); //hide it first, then show it on the first hit
+        UpdateNewMultiplerTier(multiplierTiers[0]);
 
 
         //Load in binds for click
         clickKeys = new KeyCode[] { KeyCode.Mouse0, (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click0", "X")), (KeyCode)System.Enum.Parse(typeof(KeyCode), PlayerPrefs.GetString("Click1", "Z")) };
         audio.volume = PlayerPrefs.GetFloat("Volume", 0.5f);
+
+        StartCoroutine(StartBeatmap());
+
+
     }
 
     // Update is called once per frame
+    float deltaTime = 0;
     void Update()
     {
-        if(allowInput)
+        //deltaTime += (Time.deltaTime - deltaTime) * 0.1f;
+        //float fps = 1.0f / deltaTime;
+        //print(Mathf.Ceil(fps).ToString());
+
+
+        if (allowInput && !isPreviewMode)
             DetectPlayerTaps();
+
     }
 
     public float clickDistanceRadius;
@@ -67,6 +83,7 @@ public class GameControllerScript : MonoBehaviour
     KeyCode[] clickKeys;
 
     void DetectPlayerTaps() {
+
         foreach(KeyCode keycode in clickKeys) {
             if (Input.GetKeyDown(keycode)) {
                 Vector2 clickPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -143,15 +160,18 @@ public class GameControllerScript : MonoBehaviour
         notesHit++;
     }
 
+    Text multiplierText;
+
     void UpdateNewMultiplerTier(MultiplierTier tier) {
         scoreMultiplier = tier.multiplier;
+        multiplierText.text = "x" + tier.multiplier;
         indicatorText.color = tier.streakColor;
+        multiplierText.color = tier.streakColor;
     }
 
     void OnNoteMissed() {
         UpdateIndicatorAndStreak(NoteResult.Missed);
-        if(enableMetronome)
-            metronomeAudio.Play();
+        
     }
 
     int streak = 0;
@@ -159,7 +179,9 @@ public class GameControllerScript : MonoBehaviour
         //kill streak
         if(result == NoteResult.Missed || result == NoteResult.Bad) {
             streak = 0;
-            UpdateNewMultiplerTier(multiplierTiers[0]);
+            multiplierTierIndex = 0;
+            if(!isPreviewMode)
+                UpdateNewMultiplerTier(multiplierTiers[0]);
         } else {
             streak++;
             highestCombo = Mathf.Max(streak, highestCombo);
@@ -188,6 +210,7 @@ public class GameControllerScript : MonoBehaviour
 
     void UpdateScoreUI() {
         scoreText.text = score.ToString();
+        multiplierText.gameObject.SetActive(true);
     }
 
     void ProcessTexture2D() {
@@ -287,8 +310,8 @@ public class GameControllerScript : MonoBehaviour
 
     Queue<GameObject> framesQueue = new Queue<GameObject>(); //for reuse instead of destroying
 
-    IEnumerator AnimateNote(Vector2Int location) {
 
+    IEnumerator AnimateNote(Vector2Int location) {
         GameObject frame;
         Vector3 framePos = new Vector3(sequence[seqIndex].x + 0.5f, sequence[seqIndex].y + 0.5f, -1);
 
@@ -317,25 +340,34 @@ public class GameControllerScript : MonoBehaviour
         Note note = new Note(sequence[seqIndex], Time.time, frame);
         clickableNotes.Add(note);
 
+        float timeBeforeAnim = audio.time;
+
         //smoothly animate the outer ring to spin to targetAngles (full 180)
         float timeElapsed = 0;
-        while(timeElapsed < (60f / bpm) * 3) {
+        float audioTimeLastFrame = audio.time;
+        while (timeElapsed < (60f / bpm) * 3) {
             // outerFrameTransform.eulerAngles = Vector3.Lerp(outerFrameTransform.eulerAngles, targetAngles, noteTurnSpeed * Time.deltaTime);
             // outerFrameTransform.localScale = Vector3.Lerp(outerFrameTransform.localScale, new Vector3(0.2f, 0.2f, 1f), noteShrinkSpeed * Time.deltaTime);
 
+            float audioTimeDelta = audio.time - audioTimeLastFrame;
+
             //rotate slowly
-            outerFrameTransform.eulerAngles += Vector3.forward * noteTurnSpeed * Time.deltaTime;
+            outerFrameTransform.eulerAngles += Vector3.forward * noteTurnSpeed * audioTimeDelta;
             //shrink slowly
-            outerFrameTransform.localScale += (Vector3.left + Vector3.down) * noteShrinkSpeed * Time.deltaTime;
-            
-            
-            timeElapsed += Time.deltaTime;
-            yield return new WaitForEndOfFrame();           
+            outerFrameTransform.localScale += (Vector3.left + Vector3.down) * noteShrinkSpeed * audioTimeDelta;
+
+
+            timeElapsed += audioTimeDelta;
+            audioTimeLastFrame = audio.time;
+            yield return null;
         }
         outerFrameTransform.eulerAngles = targetAngles;
         frame.SetActive(false);
 
-        yield return new WaitForSeconds(afterNoteThreshold);
+        if (enableMetronome)
+            metronomeAudio.Play();
+
+        yield return new WaitForSeconds(afterNoteThreshold * 60f * Time.deltaTime);
         //if user did not click on this note
         if (clickableNotes.Contains(note)) {
             OnNoteMissed();
@@ -349,13 +381,39 @@ public class GameControllerScript : MonoBehaviour
 
     public float waitBeginningTime = 0;
     IEnumerator StartBeatmap() {
-        yield return new WaitForSeconds(waitBeginningTime);
+
+        yield return new WaitForSeconds(2);
+
+
+        audio.Play();
+
+
+        float secondsToWait = waitBeginningTime;
+        //float temp = Time.realtimeSinceStartup;
+
+        //float timer = 0;
+        //while (timer < secondsToWait) {
+        //    timer += audio.time - timeLastFrame;
+        //    timeLastFrame = audio.time;
+        //    yield return null;
+        //}
+        //print(Time.realtimeSinceStartup - temp);
+
+        //double timeStart = audio.time;
+        //yield return new WaitUntil(() => audio.time >= timeStart + secondsToWait);
+
+        while (audio.time < secondsToWait) {
+            yield return null;
+        }
+
+        expectedAudioPosition = audio.time;
         StartCoroutine(Beats());
     }
 
     public bool enableMetronome = false;
-    public AudioSource metronomeAudio;    
+    public AudioSource metronomeAudio;
 
+    float expectedAudioPosition = 0;
     //Called recursively every beat
     IEnumerator Beats() {
 
@@ -364,12 +422,22 @@ public class GameControllerScript : MonoBehaviour
             notesTotal++;
             StartCoroutine(AnimateNote(sequence[seqIndex]));
         }
+        
 
-       
-
-        yield return new WaitForSeconds((60f / bpm) * noteMultipliers[seqIndex]);
+        float beatDuration = (60f / bpm) * noteMultipliers[seqIndex];
+        expectedAudioPosition += beatDuration;
+        //float startTime = audio.time;
+        double startDsp = AudioSettings.dspTime;
+        while (audio.time < expectedAudioPosition) {
+            yield return null;
+        }
+        //double timeStart = audio.time;
+        //yield return new WaitUntil(() => audio.time >= timeStart + secondsToWait);
 
         seqIndex++;
+        if(seqIndex == 30) {
+            print(audio.time);
+        }
 
         if (seqIndex < sequence.Length)
             StartCoroutine(Beats());
@@ -388,6 +456,7 @@ public class GameControllerScript : MonoBehaviour
 
 
         if (!isPreviewMode) {
+            
             gameData = new GameData();
 
             GameData.score = score;
